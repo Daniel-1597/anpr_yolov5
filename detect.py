@@ -2,6 +2,7 @@ import argparse
 
 from utils.datasets import *
 from utils.utils import *
+import copy
 
 
 def detect(save_img=False):
@@ -51,6 +52,7 @@ def detect(save_img=False):
     img = torch.zeros((1, 3, imgsz, imgsz), device=device)  # init img
     _ = model(img.half() if half else img) if device.type != 'cpu' else None  # run once
     for path, img, im0s, vid_cap in dataset:
+        img_copy = copy.deepcopy(img)
         img = torch.from_numpy(img).to(device)
         img = img.half() if half else img.float()  # uint8 to fp16/32
         img /= 255.0  # 0 - 255 to 0.0 - 1.0
@@ -91,6 +93,7 @@ def detect(save_img=False):
 
                 # Write results
                 for *xyxy, conf, cls in det:
+                    img_copy = img_copy[int(y1):int(y2), int(x2):int(x1)]
                     if save_txt:  # Write to file
                         xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
                         with open(save_path[:save_path.rfind('.')] + '.txt', 'a') as file:
@@ -105,6 +108,7 @@ def detect(save_img=False):
 
             # Stream results
             if view_img:
+                cv2.imshow("cropped_image", img_copy)
                 cv2.imshow(p, im0)
                 if cv2.waitKey(1) == ord('q'):  # q to quit
                     raise StopIteration
